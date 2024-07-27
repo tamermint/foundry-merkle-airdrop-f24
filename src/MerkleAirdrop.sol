@@ -86,4 +86,8 @@ contract MerkleAirdrop {
     function getClaimers() public view returns (address[] memory) {
         return s_claimers;
     }
+
+    function getAirdropToken() public view returns (address) {
+        return address(i_airdropToken);
+    }
 }
