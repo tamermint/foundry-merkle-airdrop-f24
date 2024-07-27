@@ -18,18 +18,20 @@ contract MerkleAirdrop {
     ////////////////////
 
     error MerkleAirdrop__InvalidMerkleProof();
+    error MerkleAirdrop__AlreadyClaimed();
 
     //////////////////////
     ///State variables///
     /////////////////////
 
     address[] public s_claimers; //list of claiming addresses
+    mapping(address user => bool claimed) public s_hasClaimed; //mapping of claimed addresses
     bytes32 private immutable i_merkleRoot; //to store the root of the address array
+    IERC20 private immutable i_airdropToken; //to initialize our woofie token
 
     //////////////////////
     ///Type Declaration///
     /////////////////////
-    IERC20 private immutable i_airdropToken; //to initialize our woofie token
 
     //////////////////////
     ///// Events ////////
@@ -51,13 +53,24 @@ contract MerkleAirdrop {
      * @param merkleProof proof array to store the address and compare against the i_merkleRoot
      */
     function claim(address account, uint256 amount, bytes32[] calldata merkleProof) external {
-        //calculate hash using account and amount -> leaf node
+        //check if address has already lcaimed or not (Checks)
+        if (s_hasClaimed[account]) {
+            revert MerkleAirdrop__AlreadyClaimed();
+        }
+
+        //calculate hash using account and amount -> leaf node (Effects)
         bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encodePacked(account, amount)))); //hashing done twice to avoice collisions
         //verify the proof
         if (!MerkleProof.verify(merkleProof, i_merkleRoot, leaf)) {
             revert MerkleAirdrop__InvalidMerkleProof();
         }
+        //Interaction
+        //add to mapping
+        s_hasClaimed[account] = true;
+
+        //emit event
         emit AirdropClaimed(account, amount);
+
         //send tokens
         i_airdropToken.safeTransfer(account, amount);
     }
