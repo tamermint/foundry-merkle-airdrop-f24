@@ -59,7 +59,7 @@ contract MerkleAirdrop {
         }
 
         //calculate hash using account and amount -> leaf node (Effects)
-        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encodePacked(account, amount)))); //hashing done twice to avoice collisions
+        bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(account, amount)))); //hashing done twice to avoice collisions
         //verify the proof
         if (!MerkleProof.verify(merkleProof, i_merkleRoot, leaf)) {
             revert MerkleAirdrop__InvalidMerkleProof();
