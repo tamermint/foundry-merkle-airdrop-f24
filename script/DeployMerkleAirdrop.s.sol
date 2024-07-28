@@ -22,7 +22,7 @@ contract DeployMerkleAirdrop is Script {
         return (airdrop, token);
     }
 
-    function run() external {
-        deployMerkleAirdrop();
+    function run() external returns (MerkleAirdrop, WoofieToken) {
+        return deployMerkleAirdrop();
     }
 }
