@@ -4,8 +4,10 @@ pragma solidity ^0.8.24;
 import {Test, console} from "forge-std/Test.sol";
 import {MerkleAirdrop} from "../src/MerkleAirdrop.sol";
 import {WoofieToken} from "../src/WoofieToken.sol";
+import {ZkSyncChainChecker} from "foundry-devops/src/ZkSyncChainChecker.sol";
+import {DeployMerkleAirdrop} from "../script/DeployMerkleAirdrop.s.sol";
 
-contract MerkleAirdropTest is Test {
+contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     MerkleAirdrop public merkleAirdrop;
     WoofieToken public woofieToken;
     bytes32 public ROOT = 0xaa5d581231e596618465a56aa0f5870ba6e20785fe436d5bfb82b08662ccc7c4;
@@ -19,10 +21,15 @@ contract MerkleAirdropTest is Test {
     uint256 userPrivKey;
 
     function setUp() public {
-        woofieToken = new WoofieToken();
-        merkleAirdrop = new MerkleAirdrop(ROOT, woofieToken);
-        woofieToken.mint(woofieToken.owner(), AMOUNT_TO_SEND);
-        woofieToken.transfer(address(merkleAirdrop), AMOUNT_TO_SEND);
+        if (!isZkSyncChain()) {
+            DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
+            (merkleAirdrop, woofieToken) = deployer.run();
+        } else {
+            woofieToken = new WoofieToken();
+            merkleAirdrop = new MerkleAirdrop(ROOT, woofieToken);
+            woofieToken.mint(woofieToken.owner(), AMOUNT_TO_SEND);
+            woofieToken.transfer(address(merkleAirdrop), AMOUNT_TO_SEND);
+        }
         (user, userPrivKey) = makeAddrAndKey("user");
     }
 
