@@ -17,13 +17,14 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     bytes32 public proofTwo = 0xe5ebd1e1b5a5478a944ecab36a9a954ac3b6b8216875f6524caa7a1d87096576;
     bytes32[] public PROOF = [proofOne, proofTwo];
 
+    address gasPayer;
     address user;
     uint256 userPrivKey;
 
     function setUp() public {
         if (!isZkSyncChain()) {
             DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
-            (merkleAirdrop, woofieToken) = deployer.run();
+            (merkleAirdrop, woofieToken) = deployer.deployMerkleAirdrop();
         } else {
             woofieToken = new WoofieToken();
             merkleAirdrop = new MerkleAirdrop(ROOT, woofieToken);
@@ -31,15 +32,26 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
             woofieToken.transfer(address(merkleAirdrop), AMOUNT_TO_SEND);
         }
         (user, userPrivKey) = makeAddrAndKey("user");
+        gasPayer = makeAddr("gasPayer");
+    }
+
+    function signMessage(uint256 privKey, address account) public view returns (uint8 v, bytes32 r, bytes32 s) {
+        bytes32 hashedMessaged = merkleAirdrop.getMessageHash(account, AMOUNT_TO_CLAIM);
+        (v, r, s) = vm.sign(privKey, hashedMessaged);
     }
 
     function testUsersCanClaim() public {
-        console.log(user);
         uint256 startingBalance = woofieToken.balanceOf(user);
         console.log("Starting balance:", startingBalance);
 
-        vm.prank(user);
-        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF);
+        //get the user to sign the message
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivKey, user);
+        vm.stopPrank();
+
+        //gasPayer calls the claim on behalf on the user using the signed message
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
 
         uint256 endingBalance = woofieToken.balanceOf(user);
         console.log("Ending balance:", endingBalance);
