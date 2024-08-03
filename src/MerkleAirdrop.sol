@@ -68,7 +68,7 @@ contract MerkleAirdrop is EIP712 {
         if (!_isValidSignature(account, getMessageHash(account, amount), v, r, s)) {
             revert MerkleAirdrop__InvalidSignature();
         }
-        //check if address has already lcaimed or not (Checks)
+        //check if address has already claimed or not (Checks)
         if (s_hasClaimed[account]) {
             revert MerkleAirdrop__AlreadyClaimed();
         }
